@@ -35,7 +35,8 @@ columns_to_remove = [
     'track_number',
     'track_publisher',
     'track_publisher',
-    'track_genres'
+    'track_genres',
+    'track_image_file'
 ]
 
 # Step 3: Drop the specified columns

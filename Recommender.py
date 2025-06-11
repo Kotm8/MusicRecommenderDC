@@ -4,13 +4,24 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.metrics.pairwise import cosine_similarity
 import random
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 import uvicorn
+import requests 
+import json
+from bs4 import BeautifulSoup
+
 
 app = FastAPI(title="Music Recommender API")
-
-track_df = pd.read_csv(r'output.csv') 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://127.0.0.1:5500", "http://localhost:5500"],  # Allow your frontend origin
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all methods (GET, POST, etc.)
+    allow_headers=["*"],  # Allow all headers
+)
+track_df = pd.read_csv(r'outputRedacted.csv') 
 genre_df = pd.read_csv(r'genres.csv') 
 
 user_state = {
@@ -27,6 +38,8 @@ class SongRecommendation(BaseModel):
     artist_name: str
     genre_title: str
     track_url: str
+    audio_url: Optional[str] = None
+    image_url: Optional[str] = None
 
 def get_related_genres(genre_id, genre_df):
     related = {genre_id}
@@ -60,43 +73,118 @@ def create_feature_matrix(tracks, genres):
     features = np.hstack([genre_features, language_features, interest_features])
     return features, unique_genres, encoder, scaler
 
-def recommend_songs(liked_songs, disliked_songs, shown_songs, num_recommendations=1, dislike_penalty=0.5):
+def recommend_songs(
+    liked_songs: List[str],
+    disliked_songs: List[str],
+    shown_songs: List[str],
+    num_recommendations: int = 1,
+    dislike_penalty: float = 0.5
+) -> pd.DataFrame:
+    # Validate inputs
     features, _, _, _ = create_feature_matrix(track_df, genre_df)
+    if track_df.empty or features.shape[0] != len(track_df):
+        raise ValueError("Invalid track_df or feature matrix")
+
     scores = np.zeros(len(track_df))
-    
+    song_index = {title.lower().strip(): idx for idx, title in enumerate(track_df['track_title'])}
+
+    # Process liked songs
     for song in liked_songs:
-        song_data = track_df[track_df['track_title'].str.lower() == song.lower()]
-        if not song_data.empty:
-            idx = song_data.index[0]
+        song_key = song.lower().strip()
+        if song_key in song_index:
+            idx = song_index[song_key]
             similarity = cosine_similarity([features[idx]], features)[0]
             scores += similarity
-    
+
+    # Process disliked songs
     for song in disliked_songs:
-        song_data = track_df[track_df['track_title'].str.lower() == song.lower()]
-        if not song_data.empty:
-            idx = song_data.index[0]
+        song_key = song.lower().strip()
+        if song_key in song_index:
+            idx = song_index[song_key]
             similarity = cosine_similarity([features[idx]], features)[0]
             scores -= dislike_penalty * similarity
-    
-    exclude_indices = []
-    for song in shown_songs:
-        song_data = track_df[track_df['track_title'].str.lower() == song.lower()]
-        if not song_data.empty:
-            exclude_indices.append(song_data.index[0])
-    
+
+    # Exclude shown songs
+    exclude_indices = {song_index[song.lower().strip()] for song in shown_songs if song.lower().strip() in song_index}
     valid_indices = [i for i in range(len(scores)) if i not in exclude_indices]
+
     if not valid_indices:
-        return pd.DataFrame()
-    
+        return pd.DataFrame(columns=['track_title', 'artist_name', 'genre_title', 'track_url', 'audio_url', 'image_url'])
+
+    # Handle case with no preferences
     if not liked_songs and not disliked_songs:
         random_idx = random.choice(valid_indices)
-        return track_df.iloc[[random_idx]][['track_title', 'artist_name', 'genre_title', 'track_url']]
-    
-    sorted_indices = sorted(valid_indices, key=lambda i: scores[i], reverse=True)
-    top_indices = sorted_indices[:num_recommendations]
-    return track_df.iloc[top_indices][['track_title', 'artist_name', 'genre_title', 'track_url']]
+        selected_row = track_df.iloc[[random_idx]]
+        fma_response = extract_fma_data(selected_row['track_url'].iloc[0])
+        result = selected_row[['track_title', 'artist_name', 'genre_title', 'track_url']].copy()
+        result['audio_url'] = fma_response.audio_url
+        result['image_url'] = fma_response.image_url
+        return result
 
-# FastAPI Endpoints
+    # Select top recommendations
+    sorted_indices = sorted(valid_indices, key=lambda i: scores[i], reverse=True)
+    top_indices = sorted_indices[:min(num_recommendations, len(valid_indices))]
+    result = track_df.iloc[top_indices][['track_title', 'artist_name', 'genre_title', 'track_url']].copy()
+    result['audio_url'] = None
+    result['image_url'] = None
+
+    # Fetch FMA data for each recommended song
+    for idx in result.index:
+        fma_response = extract_fma_data(result.loc[idx, 'track_url'])
+        result.loc[idx, 'audio_url'] = fma_response.audio_url
+        result.loc[idx, 'image_url'] = fma_response.image_url
+
+    return result
+
+class FMAResponse(BaseModel):
+    audio_url: Optional[str] = None
+    image_url: Optional[str] = None
+    
+def extract_fma_data(track_url: str) -> FMAResponse:
+    try:
+        response = requests.get(track_url, timeout=10)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        audio_url = None
+        image_url = None
+
+        # Extract audio URL from data-track-info
+        track_div = soup.find('div', class_='play-item')
+        if track_div and 'data-track-info' in track_div.attrs:
+            track_info = json.loads(track_div['data-track-info'])
+            audio_url = track_info.get('fileUrl') or track_info.get('playbackUrl')
+
+        # Fallback to og:audio meta tag if data-track-info is not found
+        if not audio_url:
+            audio_tag = soup.find('meta', property='og:audio')
+            if audio_tag and audio_tag.get('content'):
+                audio_url = audio_tag.get('content')
+
+        # Extract image URL from img tag
+        img_tag = soup.find('img', class_='object-cover')
+        if img_tag and img_tag.get('src'):
+            base_image_url = img_tag['src']
+            # Ensure width and height parameters are set to 290
+            if 'width=' in base_image_url and 'height=' in base_image_url:
+                image_url = base_image_url.replace('width=400', 'width=290').replace('height=400', 'height=290')
+            else:
+                image_url = f"{base_image_url}&width=290&height=290" if '?' in base_image_url else f"{base_image_url}?width=290&height=290"
+
+        # Fallback to og:image meta tag if img tag is not found
+        if not image_url:
+            image_tag = soup.find('meta', property='og:image')
+            if image_tag and image_tag.get('content'):
+                base_image_url = image_tag['content']
+                if 'width=' in base_image_url and 'height=' in base_image_url:
+                    image_url = base_image_url.replace('width=400', 'width=290').replace('height=400', 'height=290')
+                else:
+                    image_url = f"{base_image_url}&width=290&height=290" if '?' in base_image_url else f"{base_image_url}?width=290&height=290"
+
+        return FMAResponse(audio_url=audio_url, image_url=image_url)
+    except requests.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch FMA data: {str(e)}")
+
 @app.get("/recommend", response_model=SongRecommendation)
 async def get_recommendation():
     """Get a new song recommendation."""
@@ -117,7 +205,9 @@ async def get_recommendation():
         track_title=song['track_title'],
         artist_name=song['artist_name'],
         genre_title=song['genre_title'],
-        track_url=song['track_url']
+        track_url=song['track_url'],
+        audio_url=song['audio_url'],
+        image_url=song['image_url']
     )
 
 @app.post("/action")

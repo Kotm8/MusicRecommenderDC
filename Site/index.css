@@ -1,0 +1,164 @@
+body {
+  margin: 0;
+  font-family: sans-serif;
+  background: #000; 
+  color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  overflow: hidden
+}
+
+.background-image {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  object-fit: cover;
+  object-position: center;
+  filter: brightness(0.4) blur(8px);
+  z-index: -1;                      
+}
+
+.container {
+  position: absolute;
+  left: 200px;
+
+  width: 550px;
+  height: 70vh;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  background:#252525; 
+  padding: 2rem;
+  border-radius: 10px; 
+}
+
+
+.album-cover {
+  position: relative;
+  width: 437px; 
+  height: 437px;
+}
+
+.album-cover img {
+  width: 100%;
+  height: 100%;
+  border-radius: 5px;
+}
+
+.info {
+  width: 500px;              
+  height: 650px;             
+  margin-left: 400px;        
+  padding: 2rem;
+  border-radius: 20px;
+  color: white;
+  font-family: sans-serif;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;  
+}
+
+.track-details h2 {
+  font-size: 2rem;
+  margin: 0;
+  font-weight: bold;
+}
+
+.track-details h3 {
+  font-size: 1.5rem;
+  margin: 0.5rem 0 1rem;
+  font-weight: normal;
+  color: #cccccc;
+}
+
+
+.progress {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.progress span {
+  font-size: 0.8rem; /* Small timestamps */
+}
+.time-container {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 100%;
+  background: transparent;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 10px;
+  height: 10px;
+  background: white;
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 5px;
+  background: white;
+}
+
+/* Add similar styles for other browsers if needed (e.g., -moz-, -ms-) */
+
+.controls {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.controls button {
+  font-size: 1.5rem; /* Default size for prev/next */
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+}
+
+#play {
+  font-size: 2rem; /* Larger play button */
+}
+
+.actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2rem;
+  background: #252525;
+  padding: 1rem 2rem;
+  border-radius: 15px;
+  margin-top: 1rem;
+}
+
+.actions button {
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.actions img {
+  width: 60px;
+  height: 60px;
+}
+
+.divider {
+  width: 1px;
+  height: 32px;
+  background: #444;
+}
