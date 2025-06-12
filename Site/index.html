@@ -7,42 +7,46 @@
   <link rel="stylesheet" href="index.css" />
 </head>
 <body>
-  <div >
-    <img id="coverBG" class="background-image" src="assets/Vinyl_Red.png" alt="Album Cover" />
+  <div>
+      <img id="coverBG" class="background-image" src="assets/Vinyl_Red.png" alt="Album Cover" />
   </div>
-  <div class="container">
-    <div class="album-cover">
-        <img id="cover" src="assets/Vinyl_Red.png" alt="Album Cover" />
-      </div>
-    <div class="progress">
-      <input type="range" id="progress-bar" min="0" value="0" />
-    </div>
-    <div class="time-container">
-      <span id="current-time">0:00</span>
-      <span id="duration">0:00</span>
-    </div>
-    <div class="controls">
-      <button id="play">
-        <img id="play-icon" src="assets/Play.png" alt="Play" />
-      </button>
-    </div>
+  <div class="stopper">
     
-  </div>
-  <div class="info">
-    <div class="track-details">
-        <h2 id="title">Title</h2>
-        <h3 id="artist">Artist</h3>
-    </div>
-    <div class="actions">
-        <button id="like">
-          <img src="assets/Like.png" alt="Like" />
+    <div class="container">
+      <div class="album-cover">
+          <img id="cover" src="assets/Vinyl_Red.png" alt="Album Cover" />
+        </div>
+      <div class="progress">
+        <input type="range" id="progress-bar" min="0" value="0" />
+      </div>
+      <div class="time-container">
+        <span id="current-time">0:00</span>
+        <span id="duration">0:00</span>
+      </div>
+      <div class="controls">
+        <button id="play">
+          <img id="play-icon" src="assets/Play.png" alt="Play" />
         </button>
-        <img src="assets/Line 1.png" style="width: 1px;" alt="Like" />
-        <button id="dislike">
-          <img src="assets/Dislike.png" alt="Like" />
-        </button>
+      </div>
+
+    </div>
+    <div class="info">
+      <div class="track-details">
+          <h2 id="title">Title</h2>
+          <h3 id="artist">Artist</h3>
+      </div>
+      <div class="actions">
+          <button id="like">
+            <img src="assets/Like.png" alt="Like" />
+          </button>
+          <img src="assets/Line 1.png" style="width: 1px;" alt="Like" />
+          <button id="dislike">
+            <img src="assets/Dislike.png" alt="Like" />
+          </button>
+      </div>
     </div>
   </div>
+  
   
   
   <script src="script.js"></script>
