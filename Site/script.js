@@ -13,7 +13,7 @@ const durationEl = document.querySelector('#duration');
 // Audio and Constants
 let audio = new Audio();
 const DEFAULT_COVER = 'assets/Vinyl_Red.png';
-
+const DEFAULT_BG_COVER = 'assets/blackSquare.png';
 
 // Utility Function to Check Default Image
 function isDefaultImage(url) {
@@ -43,7 +43,7 @@ async function fetchRecommendation(action = 'next') {
         artistEl.textContent = song.artist_name || "Unknown Artist";
        
         coverEl.src = isDefaultImage(song.image_url) ? DEFAULT_COVER : song.image_url;
-        coverElBG.src = isDefaultImage(song.image_url) ? DEFAULT_COVER : song.image_url;
+        coverElBG.src = isDefaultImage(song.image_url) ? DEFAULT_BG_COVER : song.image_url;
         // Set audio
         audio.src = song.audio_url || "";
         await audio.load();
@@ -75,7 +75,7 @@ async function fetchRecommendation(action = 'next') {
         titleEl.textContent = "No more recommendations.";
         artistEl.textContent = "";
         coverEl.src = DEFAULT_COVER;
-        coverElBG.src = DEFAULT_COVER;
+        coverElBG.src = DEFAULT_BG_COVER;
         audio.src = "";
         progressBar.value = 0;
         currentTimeEl.textContent = '0:00';
